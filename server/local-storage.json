@@ -1,0 +1,159 @@
+{
+  "config": {
+    "name": "WabupCup",
+    "edition": "2026",
+    "tagline": "Turnamen Futsal Perebutan Piala Wakil Bupati",
+    "registrationDeadline": "2026-10-15",
+    "tournamentStartDate": "2026-10-24",
+    "tournamentEndDate": "2026-11-08",
+    "venueName": "Gedung Utama GOR Tawang Alun Banyuwangi",
+    "venueAddress": "Jl. Wijaya Kusuma, Lingkungan Cuking Rw., Mojopanggung, Kec. Giri, Kabupaten Banyuwangi, Jawa Timur 68425, Kabupaten Banyuwangi",
+    "venueCity": "Kabupaten Banyuwangi",
+    "googleMapsEmbedUrl": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3948.921835941096!2d114.34936872662414!3d-8.210615691821596!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd14545d37030e3%3A0x3f601cc59d28c3c8!2sGedung%20Utama%20GOR%20Tawang%20Alun%20Banyuwangi!5e0!3m2!1sid!2sid!4v1788166952611!5m2!1sid!2sid",
+    "totalPrizePool": 58000000,
+    "adminContactPhone": "6285233909898",
+    "adminContactEmail": "infinityorganizer01.22@gmail.com",
+    "committeeChairmanName": "AHMAT IQBAL FIRDAUS",
+    "committeeChairmanTitle": "Ketua Panitia Pelaksana Wabup Cup 2026",
+    "bankAccounts": [],
+    "downloadableDocs": [],
+    "committeeContacts": [],
+    "committeeEmails": [],
+    "sectionsBackgrounds": {
+      "hero": {
+        "mode": "DEFAULT",
+        "bgColor": "#020617",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "LIGHT"
+      },
+      "liveScore": {
+        "mode": "DEFAULT",
+        "bgColor": "#0f172a",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      },
+      "categories": {
+        "mode": "DEFAULT",
+        "bgColor": "#0b0f19",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      },
+      "bracket": {
+        "mode": "DEFAULT",
+        "bgColor": "#0f172a",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      },
+      "venue": {
+        "mode": "DEFAULT",
+        "bgColor": "#020617",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      },
+      "sponsors": {
+        "mode": "DEFAULT",
+        "bgColor": "#020617",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 60,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      },
+      "footer": {
+        "mode": "DEFAULT",
+        "bgColor": "#020617",
+        "desktopImage": "",
+        "mobileImage": "",
+        "overlayColor": "#000000",
+        "overlayOpacity": 70,
+        "overlayBlur": false,
+        "textColorMode": "AUTO"
+      }
+    },
+    "sectionsVisibility": {
+      "hero": true,
+      "liveScore": true,
+      "categories": true,
+      "bracket": true,
+      "venue": true,
+      "sponsors": true
+    }
+  },
+  "categories": [],
+  "registrations": [],
+  "matches": [],
+  "sponsors": [],
+  "adminUsers": [
+    {
+      "id": "adm-01",
+      "username": "superadmin",
+      "fullName": "Ketua Panitia WabupCup 2026",
+      "role": "SUPERADMIN",
+      "email": "ketua.panitia@wabupcup2026.id",
+      "phone": "081234567890",
+      "createdAt": "2026-08-01",
+      "avatarColor": "bg-red-600"
+    },
+    {
+      "id": "adm-02",
+      "username": "panitia",
+      "fullName": "Sekretariat Panitia Inti",
+      "role": "PANITIA_INTI",
+      "email": "sekretariat.inti@wabupcup2026.id",
+      "phone": "081398765432",
+      "createdAt": "2026-08-05",
+      "avatarColor": "bg-indigo-600"
+    },
+    {
+      "id": "adm-03",
+      "username": "panitia_umum",
+      "fullName": "Staf Panitia Umum",
+      "role": "PANITIA_UMUM",
+      "email": "panitia.umum@wabupcup2026.id",
+      "phone": "085288990011",
+      "createdAt": "2026-08-08",
+      "avatarColor": "bg-emerald-600"
+    },
+    {
+      "id": "adm-04",
+      "username": "wasit_utama",
+      "fullName": "Koordinator Wasit & Pertandingan",
+      "role": "WASIT",
+      "email": "wasit@wabupcup2026.id",
+      "phone": "085211223344",
+      "createdAt": "2026-08-10",
+      "avatarColor": "bg-amber-600"
+    },
+    {
+      "id": "adm-05",
+      "username": "operator",
+      "fullName": "Operator Lapangan & Live Score",
+      "role": "OPERATOR",
+      "email": "operator@wabupcup2026.id",
+      "phone": "085277889900",
+      "createdAt": "2026-08-12",
+      "avatarColor": "bg-cyan-600"
+    }
+  ]
+}

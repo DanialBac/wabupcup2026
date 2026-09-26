@@ -1,0 +1,8 @@
+{
+  "name": "WabupCup 2026",
+  "description": "Platform Turnamen Sepakbola & Futsal WabupCup 2026 lengkap dengan Landing Page, Bagan Pertandingan Interaktif, Live Score, Pendaftaran Online, dan CMS Admin.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
