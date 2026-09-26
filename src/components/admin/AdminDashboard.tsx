@@ -866,7 +866,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       maxTeams: Math.max(1, Number(categoryForm.maxTeams) || 16),
       registrationFee: Number(categoryForm.registrationFee) || 0,
       totalPrize: Number(categoryForm.totalPrize) || 0,
-      prizes: categoryForm.prizes.map(p => ({
+      prizes: categoryForm.prizes.map((p: any) => ({
         rank: p.rank,
         prizeMoney: p.prizeMoney,
         trophyText: p.trophy || p.trophyText || 'Piala & Piagam',
@@ -2482,7 +2482,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                                               return (
                                                 <button
                                                   key={key}
-                                                  onClick={() => handleOpenPdf(doc, info.title, item.teamName)}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    handleOpenPdf(doc, info.title, item.teamName);
+                                                  }}
                                                   title={`${info.title} (${doc.name} • ${doc.size || 'PDF'})`}
                                                   className={`px-2 py-0.5 rounded text-[10px] font-medium border flex items-center space-x-1 transition shadow-sm cursor-pointer ${info.color}`}
                                                 >
@@ -5231,15 +5236,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
         </div>
       </footer>
 
-      {/* PDF VIEWER MODAL */}
-      <PdfViewerModal
-        isOpen={pdfModalOpen}
-        onClose={() => setPdfModalOpen(false)}
-        document={selectedDoc}
-        documentTitle={selectedDocTitle}
-        teamName={selectedTeamName}
-      />
-
       {/* INVOICE & KUITANSI RESMI MODAL (CAP WABUP CUP 2026 & TTD KETUA PANITIA) */}
       <InvoiceModal
         isOpen={isInvoiceModalOpen}
@@ -7165,7 +7161,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    {inspectDocsItem.institution} • Pelatih: {inspectDocsItem.coachName} ({inspectDocsItem.coachPhone})
+                    {inspectDocsItem.institutionName} • Pelatih: {inspectDocsItem.coachName} ({inspectDocsItem.coachPhone})
                   </p>
                 </div>
               </div>
@@ -7259,7 +7255,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                                 <div className="flex items-center gap-2 pt-2">
                                   <button
                                     type="button"
-                                    onClick={() => handleOpenPdf(doc, info.title, inspectDocsItem.teamName)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleOpenPdf(doc, info.title, inspectDocsItem.teamName);
+                                    }}
                                     className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer shadow-md shadow-blue-950"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
@@ -7293,7 +7293,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                           <div className="pt-2">
                             <button
                               type="button"
-                              onClick={() => handleOpenPdf(docs.buktiPembayaran!, 'Bukti Transfer Pembayaran', inspectDocsItem.teamName)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenPdf(docs.buktiPembayaran!, 'Bukti Transfer Pembayaran', inspectDocsItem.teamName);
+                              }}
                               className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -7319,7 +7323,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                           <div className="pt-2">
                             <button
                               type="button"
-                              onClick={() => handleOpenPdf(docs.logoTim!, 'Logo Resmi Tim', inspectDocsItem.teamName)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenPdf(docs.logoTim!, 'Logo Resmi Tim', inspectDocsItem.teamName);
+                              }}
                               className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center space-x-1.5 transition cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -7402,6 +7410,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
         </div>
       )}
+
+      {/* PDF & DOCUMENT VIEWER MODAL (Always rendered on top with z-[100]) */}
+      <PdfViewerModal
+        isOpen={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        document={selectedDoc}
+        documentTitle={selectedDocTitle}
+        teamName={selectedTeamName}
+      />
 
     </div>
   );

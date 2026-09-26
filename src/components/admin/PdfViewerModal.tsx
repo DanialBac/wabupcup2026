@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { UploadedDoc } from '../../types';
-import { VirtualizedPDFViewer } from './VirtualizedPDFViewer';
 import {
   FileText,
   X,
   Download,
   CheckCircle,
-  ShieldCheck,
   Loader2,
-  AlertCircle,
   ExternalLink,
-  Layers,
-  Eye,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  AlertCircle,
+  FileCheck,
 } from 'lucide-react';
 
 interface PdfViewerModalProps {
@@ -31,43 +31,44 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
   teamName,
   onVerify,
 }) => {
-  const [zoomLevel, setZoomLevel] = useState(100);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [isLoadingBlob, setIsLoadingBlob] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [useIframeFallback, setUseIframeFallback] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
   const createdBlobRef = useRef<string | null>(null);
 
-  // Caching ke Blob RAM Browser:
-  // Mengambil dokumen sekali ke memory lokal browser.
-  // Saat user men-scroll berkali-kali atau zoom in/out, viewer membaca dari RAM lokal (0 HTTP request ke Vercel Edge).
+  // Convert Base64 Data URI to a local Blob URL for maximum performance and zero-lag rendering
   useEffect(() => {
     if (createdBlobRef.current) {
       URL.revokeObjectURL(createdBlobRef.current);
       createdBlobRef.current = null;
     }
     setBlobUrl(null);
-    setLoadError(null);
+    setHasError(false);
+    setZoomLevel(100);
 
     if (!isOpen || !document) return;
 
     const rawSource = document.fileData || document.previewUrl || document.url;
     if (!rawSource) return;
 
-    let isCancelled = false;
-
-    // 1. Sudah berupa Blob URL lokal
+    // 1. Sudah berupa Blob URL
     if (rawSource.startsWith('blob:')) {
       setBlobUrl(rawSource);
       return;
     }
 
-    // 2. Format Data URI Base64: Decode langsung di browser menjadi Blob biner
+    // 2. Base64 Data URI: ubah ke Blob URL lokal
     if (rawSource.startsWith('data:')) {
       try {
         const parts = rawSource.split(',');
         const header = parts[0];
         const base64Data = parts[1];
+        if (!base64Data) {
+          setBlobUrl(rawSource);
+          return;
+        }
+
         const mimeMatch = header.match(/:(.*?);/);
         const mimeType = mimeMatch ? mimeMatch[1] : (document.type || 'application/pdf');
 
@@ -80,39 +81,17 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         const localUrl = URL.createObjectURL(b);
         createdBlobRef.current = localUrl;
         setBlobUrl(localUrl);
-      } catch (err: any) {
-        console.warn('[PdfViewer] Base64 decode to blob fallback:', err);
+      } catch (err) {
+        console.warn('[PdfViewerModal] Base64 decode to Blob warning:', err);
         setBlobUrl(rawSource);
       }
       return;
     }
 
-    // 3. Remote URL (/api/media/view/... atau cloud storage)
-    // Ambil HANYA 1 KALI via fetch dan simpan di memory browser
-    setIsLoadingBlob(true);
-    fetch(rawSource)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal mengunduh berkas`);
-        return res.blob();
-      })
-      .then(b => {
-        if (isCancelled) return;
-        const localUrl = URL.createObjectURL(b);
-        createdBlobRef.current = localUrl;
-        setBlobUrl(localUrl);
-      })
-      .catch(err => {
-        if (isCancelled) return;
-        console.warn('[PdfViewer] Fetch to blob failed, fallback ke URL langsung:', err);
-        setLoadError(err.message || 'Gagal memuat dokumen');
-        setBlobUrl(rawSource);
-      })
-      .finally(() => {
-        if (!isCancelled) setIsLoadingBlob(false);
-      });
+    // 3. Remote URL (misal /api/media/view/...)
+    setBlobUrl(rawSource);
 
     return () => {
-      isCancelled = true;
       if (createdBlobRef.current) {
         URL.revokeObjectURL(createdBlobRef.current);
         createdBlobRef.current = null;
@@ -122,13 +101,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
 
   if (!isOpen || !document) return null;
 
-  const activeSource = blobUrl || document.fileData || document.previewUrl || document.url;
+  const activeSource = blobUrl || document.fileData || document.previewUrl || document.url || '';
+
   const isImageFile = Boolean(
     activeSource &&
     (activeSource.startsWith('data:image/') ||
      (document.type && document.type.startsWith('image/')) ||
      document.name?.match(/\.(png|jpg|jpeg|webp|svg)$/i))
   );
+
   const isRealPdfFile = Boolean(
     !isImageFile &&
     activeSource &&
@@ -137,226 +118,218 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
      activeSource.startsWith('http://') ||
      activeSource.startsWith('https://') ||
      activeSource.startsWith('/api/') ||
-     document.name?.toLowerCase().endsWith('.pdf'))
+     document.name?.toLowerCase().endsWith('.pdf') ||
+     document.type === 'application/pdf')
   );
+
+  const handleZoomIn = () => setZoomLevel(prev => Math.min(250, prev + 25));
+  const handleZoomOut = () => setZoomLevel(prev => Math.max(50, prev - 25));
+  const handleZoomReset = () => setZoomLevel(100);
 
   return (
     <div
       id="pdf-viewer-modal-overlay"
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-fadeIn"
+      className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-fadeIn"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
     >
       <div
         id="pdf-viewer-container"
-        className="relative w-full max-w-5xl h-[88vh] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-white"
+        className="relative w-full max-w-5xl h-[92vh] max-h-[950px] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-white"
+        onClick={(e) => e.stopPropagation()}
       >
-        
         {/* HEADER TOOLBAR */}
-        <div className="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3">
+        <div className="px-5 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center space-x-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-red-600/20 text-red-400 border border-red-500/30 flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-sm font-bold text-white truncate">
+              <h4 className="text-sm sm:text-base font-bold text-white truncate">
                 {documentTitle} • <span className="text-red-400">{teamName}</span>
               </h4>
-              <p className="text-[11px] text-slate-400 truncate">
-                File: {document.name} ({document.size}) • Tanggal Unggah: {document.uploadDate}
-                {blobUrl?.startsWith('blob:') && (
-                  <span className="ml-2 text-emerald-400 font-semibold">• Cache RAM Aktif</span>
-                )}
+              <p className="text-[11px] text-slate-400 truncate flex items-center gap-2">
+                <span>File: {document.name} {document.size ? `(${document.size})` : ''}</span>
+                {document.uploadDate && <span>• Diunggah: {document.uploadDate}</span>}
+                {isRealPdfFile && <span className="text-emerald-400 font-semibold">• PDF Siap</span>}
+                {isImageFile && <span className="text-blue-400 font-semibold">• Gambar</span>}
               </p>
             </div>
           </div>
 
           {/* ACTIONS */}
-          <div className="flex items-center space-x-2 shrink-0">
-            {isRealPdfFile && (
-              <button
-                onClick={() => setUseIframeFallback(prev => !prev)}
-                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center space-x-1.5 transition border border-slate-700/60"
-                title={useIframeFallback ? 'Beralih ke Visualisasi Virtual (Hemat RAM & Kuota)' : 'Beralih ke Penampil Iframe Standar'}
-              >
-                {useIframeFallback ? (
-                  <>
-                    <Layers className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="hidden md:inline">Mode Virtual</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="hidden md:inline">Mode Iframe</span>
-                  </>
-                )}
-              </button>
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+            {/* Image zoom controls */}
+            {isImageFile && (
+              <div className="hidden sm:flex items-center space-x-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                <button
+                  type="button"
+                  onClick={handleZoomOut}
+                  className="p-1 rounded hover:bg-slate-700 text-slate-300 transition"
+                  title="Perkecil"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-mono px-1 font-semibold text-slate-300 min-w-[40px] text-center">
+                  {zoomLevel}%
+                </span>
+                <button
+                  type="button"
+                  onClick={handleZoomIn}
+                  className="p-1 rounded hover:bg-slate-700 text-slate-300 transition"
+                  title="Perbesar"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleZoomReset}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold"
+                >
+                  100%
+                </button>
+              </div>
             )}
 
+            {/* Buka Tab Baru */}
+            {activeSource && (
+              <a
+                href={activeSource}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
+                title="Buka dokumen di tab baru browser"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden sm:inline">Buka Tab Baru</span>
+              </a>
+            )}
+
+            {/* Unduh Dokumen */}
             {activeSource && (
               <a
                 href={activeSource}
                 download={document.name || `${teamName}-${documentTitle}.pdf`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition"
-                title="Download Dokumen"
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center space-x-1.5 transition border border-slate-700 cursor-pointer"
+                title="Unduh file dokumen"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Download</span>
+                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="hidden sm:inline">Unduh</span>
               </a>
             )}
 
+            {/* Tombol Verifikasi jika disediakan */}
             {onVerify && (
               <button
+                type="button"
                 onClick={onVerify}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1"
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-md shadow-emerald-950"
               >
                 <CheckCircle className="w-3.5 h-3.5" />
                 <span>Verifikasi</span>
               </button>
             )}
 
+            {/* Tombol Tutup Modal */}
             <button
+              type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+              className="p-1.5 sm:p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer border border-slate-700"
+              title="Tutup (Esc)"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* PDF CANVAS / VIEWER BODY */}
-        <div className="flex-1 bg-slate-950 p-2 sm:p-4 overflow-hidden flex flex-col relative">
-          {isLoadingBlob ? (
+        {/* MODAL BODY */}
+        <div className="flex-1 bg-slate-950 p-2 sm:p-3 overflow-hidden flex flex-col relative">
+          {isLoading ? (
             <div className="flex-1 flex flex-col items-center justify-center space-y-3 text-slate-400">
               <Loader2 className="w-8 h-8 text-red-500 animate-spin" />
-              <p className="text-xs font-semibold text-slate-300">
-                Memuat dokumen ke memori lokal browser...
-              </p>
-              <p className="text-[11px] text-slate-500">
-                Scroll dan zoom berikutnya akan bebas kuota data (0 byte origin transfer).
-              </p>
+              <p className="text-xs font-semibold text-slate-300">Menyiapkan berkas dokumen...</p>
             </div>
-          ) : isImageFile ? (
+          ) : isImageFile && activeSource ? (
             <div className="flex-1 overflow-auto flex items-center justify-center p-4 bg-slate-900/60 rounded-xl border border-slate-800">
               <img
                 src={activeSource}
                 alt={`${documentTitle} - ${teamName}`}
-                className="max-h-full max-w-full object-contain rounded-lg shadow-xl"
-                style={{ transform: `scale(${zoomLevel / 100})`, transition: 'transform 0.2s' }}
+                className="max-h-full max-w-full object-contain rounded-lg shadow-2xl transition-transform duration-150"
+                style={{ transform: `scale(${zoomLevel / 100})` }}
+                onError={() => setHasError(true)}
               />
             </div>
-          ) : isRealPdfFile ? (
-            <div className="w-full h-full rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex flex-col">
-              {!useIframeFallback ? (
-                <VirtualizedPDFViewer
-                  source={activeSource}
-                  documentTitle={documentTitle}
-                  teamName={teamName}
-                  onFallbackToIframe={() => setUseIframeFallback(true)}
-                />
-              ) : (
-                <iframe
-                  src={`${activeSource}#toolbar=1&navpanes=0`}
-                  className="w-full h-full border-0 rounded-xl bg-white"
-                  title={`${documentTitle} - ${teamName}`}
-                />
-              )}
+          ) : isRealPdfFile && activeSource ? (
+            <div className="w-full h-full rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex flex-col relative">
+              <iframe
+                src={`${activeSource}#toolbar=1&navpanes=0`}
+                className="w-full h-full border-0 rounded-xl bg-white"
+                title={`${documentTitle} - ${teamName}`}
+                loading="eager"
+              />
             </div>
           ) : (
+            /* Fallback Tampilan Lembar Informasi Berkas Panitia */
             <div className="flex-1 overflow-auto flex items-center justify-center p-4">
               <div
-                className="w-full max-w-2xl min-h-[500px] bg-white text-slate-900 rounded-lg shadow-2xl p-8 transition-transform duration-200"
+                className="w-full max-w-2xl bg-white text-slate-900 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-5"
                 style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
               >
-                {/* OFFICIAL DOCUMENT HEADER */}
-                <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center space-y-1">
-                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-red-700">
+                <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
+                  <h3 className="text-xs font-extrabold uppercase tracking-widest text-red-700">
                     PANITIA PELAKSANA TURNAMEN WABUPCUP 2026
                   </h3>
-                  <h2 className="text-base font-bold uppercase tracking-wider">
+                  <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-950">
                     {documentTitle.toUpperCase()}
                   </h2>
-                  <p className="text-[10px] text-slate-500">
-                    Lampiran Berkas Resmi Tim: <strong className="text-slate-900">{teamName}</strong> • Tanggal Unggah: {document.uploadDate}
+                  <p className="text-[11px] text-slate-500">
+                    Lampiran Berkas Resmi Tim: <strong className="text-slate-900">{teamName}</strong>
                   </p>
                 </div>
 
-                {/* DOCUMENT BODY CONTENT */}
-                <div className="space-y-4 text-xs leading-relaxed text-slate-700">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-1">
-                      Metadata Berkas Database:
-                    </span>
-                    <p><strong>Nama Berkas:</strong> {document.name}</p>
-                    <p><strong>Ukuran File:</strong> {document.size}</p>
-                    <p><strong>Tipe File:</strong> {document.type || 'application/pdf'}</p>
-                    <p><strong>Status Enkripsi:</strong> Terdaftar di Database Turnamen</p>
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs text-slate-700">
+                  <div className="flex items-center space-x-2 text-emerald-700 font-bold">
+                    <FileCheck className="w-4 h-4" />
+                    <span>Metadata Berkas Terdaftar di Database Turnamen</span>
                   </div>
-
-                  <div className="space-y-2 text-[11px]">
-                    <p>
-                      Dengan ini menyatakan bahwa seluruh data pemain, official, dan dokumen pendukung yang dilampirkan adalah benar, sah, dan dapat dipertanggungjawabkan sesuai regulasi resmi Turnamen WabupCup 2026.
-                    </p>
-                    <p>
-                      Segala bentuk manipulasi identitas (usia, domisili desa, atau kepegawaian instansi) akan dikenakan sanksi diskualifikasi langsung serta denda sesuai aturan kompetisi.
-                    </p>
-                  </div>
-
-                  {/* SIGNATURE BOX */}
-                  <div className="pt-8 flex justify-between items-end text-center">
-                    <div className="w-36">
-                      <div className="h-14 flex items-center justify-center text-slate-400 italic text-[10px]">
-                        [Tanda Tangan & Cap Basah]
-                      </div>
-                      <div className="border-t border-slate-800 pt-1 font-bold text-[11px]">
-                        Kepala Sekolah / Kades / Pimpinan
-                      </div>
-                    </div>
-
-                    <div className="w-36">
-                      <div className="h-14 flex items-center justify-center text-slate-400 italic text-[10px]">
-                        [Materai Rp 10.000]
-                      </div>
-                      <div className="border-t border-slate-800 pt-1 font-bold text-[11px]">
-                        Pelatih / Manager Tim
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                    <div><strong>Nama Berkas:</strong> {document.name}</div>
+                    <div><strong>Ukuran:</strong> {document.size || 'Tercatat'}</div>
+                    <div><strong>Tipe:</strong> {document.type || 'Dokumen'}</div>
+                    <div><strong>Tanggal Unggah:</strong> {document.uploadDate || '-'}</div>
                   </div>
                 </div>
 
+                <div className="space-y-2 text-xs leading-relaxed text-slate-600">
+                  <p>
+                    Dokumen ini telah diunggah dan terverifikasi dalam sistem database turnamen untuk tim <strong>{teamName}</strong>.
+                  </p>
+                  <p>
+                    Segala bentuk manipulasi identitas (usia, domisili, atau kepegawaian) akan dikenakan sanksi diskualifikasi sesuai regulasi resmi Turnamen WabupCup 2026.
+                  </p>
+                </div>
+
+                {activeSource && (
+                  <div className="pt-2 flex justify-center">
+                    <a
+                      href={activeSource}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition flex items-center space-x-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      <span>Buka File Dokumen Asli</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
-
-        {/* FOOTER CONTROLS */}
-        <div className="px-5 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center space-x-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Dokumen Terverifikasi Standar PDF Panitia WABUPCUP 2026</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            {activeSource && (
-              <a
-                href={activeSource}
-                download={document.name || `${teamName}-${documentTitle}.pdf`}
-                className="text-red-400 hover:text-red-300 font-semibold flex items-center space-x-1"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Unduh File</span>
-              </a>
-            )}
-            <button
-              onClick={onClose}
-              className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition"
-            >
-              Tutup Preview
-            </button>
-          </div>
-        </div>
-
       </div>
     </div>
   );
 };
-

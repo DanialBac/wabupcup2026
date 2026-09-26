@@ -91,6 +91,9 @@ let pool: mysql.Pool | null = null;
 let isMySqlConnected = false;
 let mySqlError: string | null = null;
 
+export const DEFAULT_TIDB_URL =
+  'mysql://G3R4PBkMaCJzYe3.root:uSjk1i2XTJoAV6of@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/wabupcup_db?sslaccept=strict';
+
 const DB_CONFIG_FILE = path.join(process.cwd(), 'server', 'db-config.json');
 
 export function loadSavedDbConfig(): CustomDbConfig | null {
@@ -102,7 +105,15 @@ export function loadSavedDbConfig(): CustomDbConfig | null {
   } catch (err) {
     console.warn('[DB Config] Could not read saved config file:', err);
   }
-  return null;
+  return {
+    databaseUrl: DEFAULT_TIDB_URL,
+    host: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+    port: 4000,
+    user: 'G3R4PBkMaCJzYe3.root',
+    password: 'uSjk1i2XTJoAV6of',
+    database: 'wabupcup_db',
+    ssl: true,
+  };
 }
 
 export function saveDbConfigFile(config: CustomDbConfig): void {
@@ -185,7 +196,7 @@ export async function ensureDbConnected(): Promise<boolean> {
   if (isMySqlConnected && pool) {
     return true;
   }
-  const dbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : undefined;
+  const dbUrl = (process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : undefined) || DEFAULT_TIDB_URL;
   const host = process.env.MYSQL_HOST ? process.env.MYSQL_HOST.trim() : undefined;
   if (!dbUrl && !host) {
     return false;
@@ -237,7 +248,7 @@ export async function initDatabaseConnection(customConfig?: CustomDbConfig): Pro
     }
   }
 
-  const dbUrl = process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : undefined;
+  const dbUrl = (process.env.DATABASE_URL ? process.env.DATABASE_URL.trim() : undefined) || DEFAULT_TIDB_URL;
   const host = process.env.MYSQL_HOST ? process.env.MYSQL_HOST.trim() : undefined;
   const user = process.env.MYSQL_USER ? process.env.MYSQL_USER.trim() : undefined;
   const password = process.env.MYSQL_PASSWORD !== undefined ? process.env.MYSQL_PASSWORD : undefined;

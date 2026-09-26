@@ -11,6 +11,9 @@ const memoryBlobMap = new Map<string, Blob>();
  * Helper to check if a URL is already in the persistent Cache Storage
  */
 async function isUrlInCache(url: string): Promise<boolean> {
+  if (!url || url.startsWith('blob:') || url.startsWith('data:')) {
+    return memoryBlobMap.has(url);
+  }
   if (typeof window === 'undefined' || !('caches' in window)) {
     return memoryBlobMap.has(url);
   }
@@ -27,10 +30,11 @@ async function isUrlInCache(url: string): Promise<boolean> {
  * Helper to retrieve a cached Blob from persistent Cache Storage or memory
  */
 export async function getCachedPdfBlob(url: string): Promise<Blob | null> {
+  if (!url) return null;
   if (memoryBlobMap.has(url)) {
     return memoryBlobMap.get(url)!;
   }
-  if (typeof window === 'undefined' || !('caches' in window)) {
+  if (url.startsWith('blob:') || url.startsWith('data:') || typeof window === 'undefined' || !('caches' in window)) {
     return null;
   }
   try {
@@ -54,9 +58,15 @@ export async function getCachedPdfBlob(url: string): Promise<Blob | null> {
  * Helper to store a Blob into persistent Cache Storage
  */
 export async function storePdfBlobInCache(url: string, blob: Blob): Promise<void> {
+  if (!url || !blob) return;
   memoryBlobMap.set(url, blob);
   if (!memoryBlobUrlMap.has(url)) {
     memoryBlobUrlMap.set(url, URL.createObjectURL(blob));
+  }
+
+  // W3C Cache API requires http or https URL scheme
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    return;
   }
 
   if (typeof window !== 'undefined' && 'caches' in window) {

@@ -6,6 +6,7 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { TournamentProvider, useTournament } from './context/TournamentContext';
 import { usePdfPreloader } from './hooks/usePdfPreloader';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { LiveScoreSection } from './components/LiveScoreSection';
@@ -37,6 +38,12 @@ const MainLayout: React.FC = () => {
   const [regCategory, setRegCategory] = useState<TournamentCategory>('SMA');
   const [isCheckStatusOpen, setIsCheckStatusOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [adminInstanceKey, setAdminInstanceKey] = useState<number>(0);
+
+  const handleOpenAdmin = () => {
+    setAdminInstanceKey(prev => prev + 1);
+    setIsAdminOpen(true);
+  };
 
   const handleOpenRegistration = (category?: TournamentCategory) => {
     if (category) {
@@ -68,7 +75,7 @@ const MainLayout: React.FC = () => {
         onOpenRegister={() => handleOpenRegistration()}
         onOpenRegistration={() => handleOpenRegistration()}
         onOpenCheckStatus={() => setIsCheckStatusOpen(true)}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* HERO SECTION */}
@@ -107,7 +114,7 @@ const MainLayout: React.FC = () => {
       <Footer
         onOpenCheckStatus={() => setIsCheckStatusOpen(true)}
         onOpenRegistration={() => handleOpenRegistration()}
-        onOpenAdmin={() => setIsAdminOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* LAZY LOADED MODALS (Loaded on-demand to keep initial bundle tiny) */}
@@ -128,7 +135,45 @@ const MainLayout: React.FC = () => {
         )}
 
         {isAdminOpen && (
-          <AdminDashboard onClose={() => setIsAdminOpen(false)} />
+          <ErrorBoundary
+            key={adminInstanceKey}
+            name="AdminDashboard"
+            fallbackRender={(err, reset) => (
+              <div className="fixed inset-0 z-[999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+                  <h3 className="text-base font-bold text-white">Sesi Panel Admin Terhambat</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{err.message || 'Terjadi kesalahan tidak terduga pada salah satu komponen admin.'}</p>
+                  <div className="flex gap-2 justify-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        reset();
+                        setAdminInstanceKey(k => k + 1);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition cursor-pointer"
+                    >
+                      Muat Ulang Panel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        reset();
+                        setIsAdminOpen(false);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition cursor-pointer"
+                    >
+                      Kembali ke Beranda
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          >
+            <AdminDashboard
+              key={adminInstanceKey}
+              onClose={() => setIsAdminOpen(false)}
+            />
+          </ErrorBoundary>
         )}
       </Suspense>
     </div>

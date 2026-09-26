@@ -1229,7 +1229,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } else if (chosenStructure === '16_BESAR') {
       const targetTeams = [...teamsToDraw];
       while (targetTeams.length < 16) {
-        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-' });
+        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-', logo: '' });
       }
 
       for (let i = 0; i < 8; i++) {
@@ -1324,7 +1324,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } else if (chosenStructure === '8_BESAR') {
       const targetTeams = [...teamsToDraw];
       while (targetTeams.length < 8) {
-        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-' });
+        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-', logo: '' });
       }
 
       for (let i = 0; i < 4; i++) {
@@ -1398,7 +1398,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } else {
       const targetTeams = [...teamsToDraw];
       while (targetTeams.length < 4) {
-        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-' });
+        targetTeams.push({ name: 'BYE (Lolos Otomatis)', institution: '-', logo: '' });
       }
 
       const teamA1 = targetTeams[0];

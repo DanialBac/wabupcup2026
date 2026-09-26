@@ -31,11 +31,13 @@ export const DatabaseManagerTab: React.FC = () => {
 
   // Interactive Connection Form State
   const [connectMode, setConnectMode] = useState<'URI' | 'PARAMS'>('URI');
-  const [dbUrlInput, setDbUrlInput] = useState('mysql://G3R4PBkMaCJzYe3.root:GDuXYLDpS53iSAeD@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/wabupcup_db');
+  const [dbUrlInput, setDbUrlInput] = useState(
+    'mysql://G3R4PBkMaCJzYe3.root:uSjk1i2XTJoAV6of@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/wabupcup_db?sslaccept=strict'
+  );
   const [hostInput, setHostInput] = useState('gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
   const [portInput, setPortInput] = useState(4000);
   const [userInput, setUserInput] = useState('G3R4PBkMaCJzYe3.root');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('uSjk1i2XTJoAV6of');
   const [databaseInput, setDatabaseInput] = useState('wabupcup_db');
   const [sslInput, setSslInput] = useState(true);
 
@@ -143,13 +145,18 @@ export const DatabaseManagerTab: React.FC = () => {
 
   const applyTidbPreset = () => {
     setConnectMode('URI');
+    setDbUrlInput(
+      'mysql://G3R4PBkMaCJzYe3.root:uSjk1i2XTJoAV6of@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/wabupcup_db?sslaccept=strict'
+    );
     setHostInput('gateway01.ap-southeast-1.prod.aws.tidbcloud.com');
     setPortInput(4000);
+    setUserInput('G3R4PBkMaCJzYe3.root');
+    setPasswordInput('uSjk1i2XTJoAV6of');
     setDatabaseInput('wabupcup_db');
     setSslInput(true);
     setActionMessage({
       type: 'success',
-      text: 'Preset TiDB Cloud Serverless diaktifkan (Port 4000 & SSL TLS 1.2+ otomatis). Masukkan password Anda lalu klik Uji & Sambungkan.',
+      text: 'Preset TiDB Cloud Serverless resmi diaktifkan. Klik "Uji & Sambungkan Sekarang" untuk verifikasi langsung.',
     });
   };
 
@@ -379,7 +386,7 @@ USE \`wabupcup_db\`;
       </div>
 
       {/* EASY TIDB CLOUD & MYSQL CONNECT STUDIO */}
-      {/* <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/70 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/70 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center shadow-lg">
@@ -583,12 +590,9 @@ USE \`wabupcup_db\`;
             </p>
           </div>
         </div>
-      </div> */}
+      </div>
 
-
-      {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           
 
@@ -763,7 +767,7 @@ USE \`wabupcup_db\`;
           </div>
         </div>
 
-      </div> */}
+      </div>
     </div>
   );
 };
