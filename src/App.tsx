@@ -5,6 +5,7 @@
 
 import React, { useState, Suspense, lazy } from 'react';
 import { TournamentProvider, useTournament } from './context/TournamentContext';
+import { usePdfPreloader } from './hooks/usePdfPreloader';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { LiveScoreSection } from './components/LiveScoreSection';
@@ -28,6 +29,10 @@ const AdminDashboard = lazy(() =>
 
 const MainLayout: React.FC = () => {
   const { config, isInitialLoading } = useTournament();
+  
+  // Preload critical tournament regulation PDFs as Blobs in persistent cache during idle time
+  usePdfPreloader();
+
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
   const [regCategory, setRegCategory] = useState<TournamentCategory>('SMA');
   const [isCheckStatusOpen, setIsCheckStatusOpen] = useState(false);

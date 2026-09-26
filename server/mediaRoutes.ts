@@ -101,7 +101,7 @@ mediaRouter.post('/media/upload', async (req: Request, res: Response) => {
 });
 
 /**
- * 2. Serve / View Media
+ * 2. Serve / View Media (With RFC 7233 Byte-Range & ETag Support for PDF streaming)
  */
 mediaRouter.get('/media/view/:id', async (req: Request, res: Response) => {
   try {
@@ -117,17 +117,46 @@ mediaRouter.get('/media/view/:id', async (req: Request, res: Response) => {
 
     const { buffer } = decodeBase64File(media.fileData);
     const rawType = (media.contentType || 'application/octet-stream').toLowerCase();
-
-    // Pencegahan XSS: File selain gambar aman/PDF dipaksa download (attachment)
     const isSafeInline = SAFE_INLINE_MIME_TYPES.includes(rawType);
     const dispositionType = isSafeInline ? 'inline' : 'attachment';
+    const totalLength = buffer.length;
 
-    res.setHeader('Content-Type', isSafeInline ? rawType : 'application/octet-stream');
-    res.setHeader('Content-Length', buffer.length);
-    res.setHeader('X-Content-Type-Options', 'nosniff'); // Cegah browser menebak MIME secara liar
+    // ETag & Cache Validation
+    const etag = `W/"${id}-${totalLength}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+    res.setHeader('Content-Type', isSafeInline ? rawType : 'application/octet-stream');
     res.setHeader('Content-Disposition', `${dispositionType}; filename="${encodeURIComponent(media.filename)}"`);
 
+    // 1. If-None-Match (304 Not Modified - 0 Transfer Bytes)
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return res.status(304).end();
+    }
+
+    // 2. HTTP Byte-Range Request (206 Partial Content)
+    // Sangat penting untuk browser PDF viewer saat scroll dan zoom agar tidak download ulang seluruh file
+    const rangeHeader = req.headers.range;
+    if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+      const parts = rangeHeader.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : totalLength - 1;
+
+      if (!isNaN(start) && start < totalLength) {
+        const validEnd = Math.min(end, totalLength - 1);
+        const chunkSize = validEnd - start + 1;
+
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${validEnd}/${totalLength}`);
+        res.setHeader('Content-Length', chunkSize);
+        return res.end(buffer.subarray(start, validEnd + 1));
+      }
+    }
+
+    // 3. Full Content Response
+    res.setHeader('Content-Length', totalLength);
     return res.end(buffer);
   } catch (err: any) {
     console.error('[Media View Error]', err);
